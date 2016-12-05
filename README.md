@@ -11,7 +11,9 @@ This code requires Tensorflow. Also scipy is used instead of Matlab or OpenCV. E
 ## Performance
 
 ## References
-[liliumao/Tensorflow-srcnn](https://github.com/liliumao/Tensorflow-srcnn) - I referred to this repository which is same implementation using Matlab code and Caffe model.
+* [liliumao/Tensorflow-srcnn](https://github.com/liliumao/Tensorflow-srcnn) 
+  * - I referred to this repository which is same implementation using Matlab code and Caffe model.
 <br>
-[carpedm20/DCGAN-tensorflow](https://github.com/carpedm20/DCGAN-tensorflow) - I have followed and learned training process and structure of this repository.
+* [carpedm20/DCGAN-tensorflow](https://github.com/carpedm20/DCGAN-tensorflow) 
+  * - I have followed and learned training process and structure of this repository.
 
