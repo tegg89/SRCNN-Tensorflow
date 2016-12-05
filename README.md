@@ -7,7 +7,7 @@ Tensorflow implementation of Convolutional Neural Networks for super-resolution.
  * Tensorflow
  * Scipy version > 0.18 ('mode' option from scipy.misc.imread function)
  
-<br><br>This code requires Tensorflow. Also scipy is used instead of Matlab or OpenCV. Especially, installing OpenCV at Linux is sort of complicated. So, with reproducing this paper, I used scipy instead. For more imformation about scipy, click [here](https://www.scipy.org/).
+<br>This code requires Tensorflow. Also scipy is used instead of Matlab or OpenCV. Especially, installing OpenCV at Linux is sort of complicated. So, with reproducing this paper, I used scipy instead. For more imformation about scipy, click [here](https://www.scipy.org/).
 
 ## Usage
 
