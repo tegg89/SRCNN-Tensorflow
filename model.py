@@ -1,4 +1,9 @@
-from utils import read_data, input_setup, save_images
+from utils import (
+  read_data, 
+  input_setup, 
+  load_sample,  
+  psnr
+)
 
 import time
 import os
@@ -11,31 +16,49 @@ def conv2d(input_, output_dim,
            k_h, k_w, d_h=1, d_w=1, stddev=1e-3, 
            name='conv2d', reuse=False):
   if reuse:
-    with tf.variable_scope(name):
-      w = tf.Variable(tf.random_normal([k_h, k_w, input_.get_shape()[-1], output_dim]), name='w')
+    with tf.variable_scope(name, reuse=reuse) as scope:
+      tf.get_variable_scope().reuse_variables()
+      # Open a reusing scope.
+      assert tf.get_variable_scope().reuse == True
+
+      w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim], 
+                          initializer=tf.random_normal_initializer(stddev=stddev))
       conv = tf.nn.conv2d(input_, w, strides=[1, d_h, d_w, 1], padding='VALID')
 
-      biases = tf.Variable(tf.zeros([output_dim]), name='biases')
+      biases = tf.get_variable('biases', [output_dim], 
+                               initializer=tf.constant_initializer(0.))
       conv = tf.nn.bias_add(conv, biases)
       return conv
   else:
     with tf.variable_scope(name):
+      # At start, the scope is not reusing.
+      assert tf.get_variable_scope().reuse == False
+
       w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim], 
-                          initializer=tf.truncated_normal_initializer(stddev=stddev))
+                          initializer=tf.random_normal_initializer(stddev=stddev))
       conv = tf.nn.conv2d(input_, w, strides=[1, d_h, d_w, 1], padding='VALID')
 
-      biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.))
+      biases = tf.get_variable('biases', [output_dim],
+                               initializer=tf.constant_initializer(0.))
       conv = tf.nn.bias_add(conv, biases)
-      return conv
-    
+      return conv    
 
 class SRCNN(object):
 
-  def __init__(self, sess, image_size=33, label_size=21, c_dim=1, checkpoint_dir=None, sample_dir=None):
+  def __init__(self, 
+               sess, 
+               image_size=33,
+               label_size=21, 
+               batch_size=64,
+               c_dim=1, 
+               checkpoint_dir=None, 
+               sample_dir=None):
 
     self.sess = sess
+    self.is_grayscale = (c_dim == 1)
     self.image_size = image_size
     self.label_size = label_size
+    self.batch_size = batch_size
 
     self.c_dim = c_dim
 
@@ -49,13 +72,12 @@ class SRCNN(object):
     self.labels = tf.placeholder(tf.float32, [None, self.label_size, self.label_size, self.c_dim], 
                                  name='labels')
     
-    self.conv1 = tf.nn.relu(conv2d(self.images, 64, 9, 9, name='conv1')) # [None, 25, 25, 64]
-    self.conv2 = tf.nn.relu(conv2d(self.conv1, 32, 1, 1, name='conv2')) # [None, 25, 25, 32]
-    self.conv3 = tf.nn.relu(conv2d(self.conv2, 1, 5, 5, name='conv3')) # [None, 21, 21, 1]
+    self.model = self.cnn(reuse=False)
 
-    self.sampler = self.sampler()
-
-    self.loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(self.labels, self.conv3))))
+    self.sampler = self.cnn(reuse=True)
+    
+    # Loss function (MSE)
+    self.loss = tf.reduce_mean(tf.square(self.labels - self.model))
 
     t_vars = tf.trainable_variables()
 
@@ -64,12 +86,17 @@ class SRCNN(object):
     self.saver = tf.train.Saver()
 
   def train(self, config):
-    input_setup(self.sess)
+    """Train SRCNN"""
+    input_setup(self.sess) # To create input h5 file
 
-    data_dir = os.path.join(os.sep, os.getcwd(), "checkpoint/train_.h5")
+    sample_data, sample_label = load_sample(self.sess, 0)
+
+    data_dir = os.path.join('./{}'.format(config.checkpoint_dir), "train.h5")
     train_data, train_label = read_data(data_dir)
 
-    train_op = tf.train.GradientDescentOptimizer(config.learning_rate).minimize(self.loss, var_list=self.var_list)
+    # Stochastic gradient descent with the standard backpropagation
+    train_op = tf.train.GradientDescentOptimizer(config.learning_rate) \
+                       .minimize(self.loss, var_list=self.var_list)
     tf.initialize_all_variables().run()
 
     counter = 1
@@ -81,33 +108,36 @@ class SRCNN(object):
       print(" [!] Load failed...")
 
     for ep in xrange(config.epoch):
-      # Batch files...
-      # 
-      for idx in xrange(0, config.num_iter):
+      # Run by batch images
+      batch_idxs = len(train_data) // config.batch_size
 
-        err = self.loss.eval({self.images: train_data, self.labels: train_label})
+      for idx in xrange(0, batch_idxs):
+        batch_images = train_data[idx*config.batch_size : (idx+1)*config.batch_size]
+        batch_labels = train_label[idx*config.batch_size : (idx+1)*config.batch_size]
+
+        err = self.loss.eval({self.images: batch_images, self.labels: batch_labels})
+        result = self.model.eval({self.images: batch_images, self.labels: batch_labels})
 
         counter += 1
-        print('Epoch: [%2d], step: [%2d], time: [%4.4f], loss: [%.8f]' \
-          % (ep, idx, time.time()-start_time, err))
+        print("Epoch: [%2d] [%4d/%4d], step: [%2d], time: [%4.4f], loss: [%.8f]" \
+              % (ep, idx, batch_idxs, counter, time.time()-start_time, err))
 
         if np.mod(counter, 100) == 1:
-          samples, loss = self.sess.run([self.sampler, self.loss], feed_dict={self.images: train_images, self.labels: train_label})
-          save_images(samples, [8, 8], './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, ep, idx))
-          print("[Sample] loss: %.8f" % loss)
+          samples, loss = self.sess.run(
+              [self.sampler, self.loss], 
+              feed_dict={self.images: sample_data, self.labels: sample_label}
+          )
 
         if np.mod(counter, 500) == 2:
           self.save(config.checkpoint_dir, counter)
 
-  def sampler(self):
-    tf.get_variable_scope().reuse_variables()
+  def cnn(self, reuse):
+    conv1 = tf.nn.relu(conv2d(self.images, 64, 9, 9, stddev=1e-3, name='conv1', reuse=reuse)) # [None, 25, 25, 64]
+    conv2 = tf.nn.relu(conv2d(conv1, 32, 1, 1, stddev=1e-3, name='conv2', reuse=reuse)) # [None, 25, 25, 32]
+    conv3 = (conv2d(conv2, 1, 5, 5, stddev=1e-4, name='conv3', reuse=reuse)) # [None, 21, 21, 1]
 
-    l1 = tf.nn.relu(conv2d(self.images, 64, 9, 9, name='conv1', reuse=True))
-    l2 = tf.nn.relu(conv2d(l1, 32, 1, 1, name='conv2', reuse=True))
-    l3 = tf.nn.relu(conv2d(l2, 1, 5, 5, name='conv3', reuse=True))
+    return conv3
 
-    return l3
-  
   def save(self, checkpoint_dir, step):
     model_name = "SRCNN.model"
     model_dir = "%s_%s" % ("srcnn", self.label_size)
@@ -122,7 +152,6 @@ class SRCNN(object):
 
   def load(self, checkpoint_dir):
     print(" [*] Reading checkpoints...")
-    
     model_dir = "%s_%s" % ("srcnn", self.label_size)
     checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 

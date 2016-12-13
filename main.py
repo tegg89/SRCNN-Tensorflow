@@ -1,5 +1,5 @@
 from model import SRCNN
-from utils import visualize
+from utils import input_setup
 
 import numpy as np
 import tensorflow as tf
@@ -39,6 +39,7 @@ def main(_):
     srcnn = SRCNN(sess, 
                   image_size=FLAGS.image_size, 
                   label_size=FLAGS.label_size, 
+                  batch_size=FLAGS.batch_size,
                   c_dim=FLAGS.c_dim, 
                   checkpoint_dir=FLAGS.checkpoint_dir,
                   sample_dir=FLAGS.sample_dir)
@@ -47,9 +48,6 @@ def main(_):
       srcnn.train(FLAGS)
     else:
       srcnn.load(FLAGS.checkpoint_dir)
-
-    visualize(sess, srcnn, FLAGS)
-
 
 if __name__ == '__main__':
   tf.app.run()
