@@ -1,8 +1,8 @@
 from utils import (
   read_data, 
   input_setup, 
-  load_sample,  
-  psnr
+  imsave,
+  merge
 )
 
 import time
@@ -12,44 +12,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-def conv2d(input_, output_dim, 
-           k_h, k_w, d_h=1, d_w=1, stddev=1e-3, 
-           name='conv2d', reuse=False):
-  if reuse:
-    with tf.variable_scope(name, reuse=reuse) as scope:
-      tf.get_variable_scope().reuse_variables()
-      # Open a reusing scope.
-      assert tf.get_variable_scope().reuse == True
-
-      w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim], 
-                          initializer=tf.random_normal_initializer(stddev=stddev))
-      conv = tf.nn.conv2d(input_, w, strides=[1, d_h, d_w, 1], padding='VALID')
-
-      biases = tf.get_variable('biases', [output_dim], 
-                               initializer=tf.constant_initializer(0.))
-      conv = tf.nn.bias_add(conv, biases)
-      return conv
-  else:
-    with tf.variable_scope(name):
-      # At start, the scope is not reusing.
-      assert tf.get_variable_scope().reuse == False
-
-      w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim], 
-                          initializer=tf.random_normal_initializer(stddev=stddev))
-      conv = tf.nn.conv2d(input_, w, strides=[1, d_h, d_w, 1], padding='VALID')
-
-      biases = tf.get_variable('biases', [output_dim],
-                               initializer=tf.constant_initializer(0.))
-      conv = tf.nn.bias_add(conv, biases)
-      return conv    
-
 class SRCNN(object):
 
   def __init__(self, 
                sess, 
                image_size=33,
                label_size=21, 
-               batch_size=64,
+               batch_size=128,
                c_dim=1, 
                checkpoint_dir=None, 
                sample_dir=None):
@@ -67,39 +36,46 @@ class SRCNN(object):
     self.build_model()
 
   def build_model(self):
-    self.images = tf.placeholder(tf.float32, [None, self.image_size, self.image_size, self.c_dim], 
-                                 name='images')
-    self.labels = tf.placeholder(tf.float32, [None, self.label_size, self.label_size, self.c_dim], 
-                                 name='labels')
+    self.images = tf.placeholder(tf.float32, [None, self.image_size, self.image_size, self.c_dim], name='images')
+    self.labels = tf.placeholder(tf.float32, [None, self.label_size, self.label_size, self.c_dim], name='labels')
     
-    self.model = self.cnn(reuse=False)
+    self.weights = {
+      'w1': tf.Variable(tf.random_normal([9, 9, 1, 64], stddev=1e-3), name='w1'),
+      'w2': tf.Variable(tf.random_normal([1, 1, 64, 32], stddev=1e-3), name='w2'),
+      'w3': tf.Variable(tf.random_normal([5, 5, 32, 1], stddev=1e-3), name='w3')
+    }
+    self.biases = {
+      'b1': tf.Variable(tf.zeros([64]), name='b1'),
+      'b2': tf.Variable(tf.zeros([32]), name='b2'),
+      'b3': tf.Variable(tf.zeros([1]), name='b3')
+    }
 
-    self.sampler = self.cnn(reuse=True)
-    
+    self.pred = self.model()
+
     # Loss function (MSE)
-    self.loss = tf.reduce_mean(tf.square(self.labels - self.model))
-
-    t_vars = tf.trainable_variables()
-
-    self.var_list = [var for var in t_vars if 'conv' in var.name]
+    self.loss = tf.reduce_mean(tf.reduce_sum(tf.square(self.labels - self.pred), reduction_indices=0))
 
     self.saver = tf.train.Saver()
 
   def train(self, config):
-    """Train SRCNN"""
-    input_setup(self.sess) # To create input h5 file
+    if config.is_train:
+      input_setup(self.sess, config)
+    else:
+      nx, ny = input_setup(self.sess, config)
 
-    sample_data, sample_label = load_sample(self.sess, 0)
+    if config.is_train:     
+      data_dir = os.path.join('./{}'.format(config.checkpoint_dir), "train.h5")
+    else:
+      data_dir = os.path.join('./{}'.format(config.checkpoint_dir), "test.h5")
 
-    data_dir = os.path.join('./{}'.format(config.checkpoint_dir), "train.h5")
     train_data, train_label = read_data(data_dir)
 
     # Stochastic gradient descent with the standard backpropagation
-    train_op = tf.train.GradientDescentOptimizer(config.learning_rate) \
-                       .minimize(self.loss, var_list=self.var_list)
-    tf.initialize_all_variables().run()
+    self.train_op = tf.train.GradientDescentOptimizer(config.learning_rate).minimize(self.loss)
 
-    counter = 1
+    tf.initialize_all_variables().run()
+    
+    counter = 0
     start_time = time.time()
 
     if self.load(self.checkpoint_dir):
@@ -107,35 +83,38 @@ class SRCNN(object):
     else:
       print(" [!] Load failed...")
 
-    for ep in xrange(config.epoch):
-      # Run by batch images
-      batch_idxs = len(train_data) // config.batch_size
+    if config.is_train:
+      print("Training...")
 
-      for idx in xrange(0, batch_idxs):
-        batch_images = train_data[idx*config.batch_size : (idx+1)*config.batch_size]
-        batch_labels = train_label[idx*config.batch_size : (idx+1)*config.batch_size]
+      for ep in xrange(config.epoch):
+        # Run by batch images
+        batch_idxs = len(train_data) // config.batch_size
+        for idx in xrange(0, batch_idxs):
+          batch_images = train_data[idx*config.batch_size : (idx+1)*config.batch_size]
+          batch_labels = train_label[idx*config.batch_size : (idx+1)*config.batch_size]
 
-        err = self.loss.eval({self.images: batch_images, self.labels: batch_labels})
-        result = self.model.eval({self.images: batch_images, self.labels: batch_labels})
+          counter += 1
+          _, err = self.sess.run([self.train_op, self.loss], feed_dict={self.images: batch_images, self.labels: batch_labels})
 
-        counter += 1
-        print("Epoch: [%2d] [%4d/%4d], step: [%2d], time: [%4.4f], loss: [%.8f]" \
-              % (ep, idx, batch_idxs, counter, time.time()-start_time, err))
+          if counter % 10 == 0:
+            print("Epoch: [%2d], step: [%2d], time: [%4.4f], loss: [%.8f]" \
+              % ((ep+1), counter, time.time()-start_time, err))
 
-        if np.mod(counter, 100) == 1:
-          samples, loss = self.sess.run(
-              [self.sampler, self.loss], 
-              feed_dict={self.images: sample_data, self.labels: sample_label}
-          )
+          if counter % 500 == 0:
+            self.save(config.checkpoint_dir, counter)
 
-        if np.mod(counter, 500) == 2:
-          self.save(config.checkpoint_dir, counter)
+    else:
+      print("Testing...")
 
-  def cnn(self, reuse):
-    conv1 = tf.nn.relu(conv2d(self.images, 64, 9, 9, stddev=1e-3, name='conv1', reuse=reuse)) # [None, 25, 25, 64]
-    conv2 = tf.nn.relu(conv2d(conv1, 32, 1, 1, stddev=1e-3, name='conv2', reuse=reuse)) # [None, 25, 25, 32]
-    conv3 = (conv2d(conv2, 1, 5, 5, stddev=1e-4, name='conv3', reuse=reuse)) # [None, 21, 21, 1]
+      result = self.pred.eval({self.images: train_data, self.labels: train_label})
 
+      merge(result, [nx, ny])
+      imsave(merge, os.path.join(os.getcwd(), config.sample_dir))
+
+  def model(self):
+    conv1 = tf.nn.relu(tf.nn.conv2d(self.images, self.weights['w1'], strides=[1,1,1,1], padding='VALID') + self.biases['b1'])
+    conv2 = tf.nn.relu(tf.nn.conv2d(conv1, self.weights['w2'], strides=[1,1,1,1], padding='VALID') + self.biases['b2'])
+    conv3 = tf.nn.conv2d(conv2, self.weights['w3'], strides=[1,1,1,1], padding='VALID') + self.biases['b3']
     return conv3
 
   def save(self, checkpoint_dir, step):
