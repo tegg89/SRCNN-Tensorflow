@@ -10,8 +10,8 @@ Tensorflow implementation of Convolutional Neural Networks for super-resolution.
 This code requires Tensorflow. Also scipy is used instead of Matlab or OpenCV. Especially, installing OpenCV at Linux is sort of complicated. So, with reproducing this paper, I used scipy instead. For more imformation about scipy, click [here](https://www.scipy.org/).
 
 ## Usage
-`python main.py` for training. After created checkpoint, then the program automatically detect checkpoint file and load it.
-`python main.py --is_train False --stride 21` for testing. To make 'stride' value same as 'label size', super-resolution can be tested.
+For training, `python main.py`
+For testing, `python main.py --is_train False --stride 21`
 
 ## References
 * [liliumao/Tensorflow-srcnn](https://github.com/liliumao/Tensorflow-srcnn) 
