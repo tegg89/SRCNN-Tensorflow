@@ -11,6 +11,7 @@ This code requires Tensorflow. Also scipy is used instead of Matlab or OpenCV. E
 
 ## Usage
 For training, `python main.py`
+<br>
 For testing, `python main.py --is_train False --stride 21`
 
 ## References
