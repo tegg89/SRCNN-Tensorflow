@@ -14,6 +14,14 @@ For training, `python main.py`
 <br>
 For testing, `python main.py --is_train False --stride 21`
 
+## Result
+Original butterfly image:
+![orig](https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/orig.png =250x250)
+Bicubic interpolated image:
+![bicubic](https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/bicubic.png =250x250)
+Super-resolved image:
+![srcnn](https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/srcnn.png =250x250)
+
 ## References
 * [liliumao/Tensorflow-srcnn](https://github.com/liliumao/Tensorflow-srcnn) 
   * - I referred to this repository which is same implementation using Matlab code and Caffe model.
