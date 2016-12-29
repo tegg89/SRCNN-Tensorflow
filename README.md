@@ -16,11 +16,11 @@ For testing, `python main.py --is_train False --stride 21`
 
 ## Result
 Original butterfly image:
-![orig](https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/orig.png =250x250)
+<img src="https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/orig.png" width="250" height="250" />
 Bicubic interpolated image:
-![bicubic](https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/bicubic.png =250x250)
+<img src="https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/bicubic.png" width="250" height="250" />
 Super-resolved image:
-![srcnn](https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/srcnn.png =250x250)
+<img src="https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/srcnn.png" width="250" height="250" />
 
 ## References
 * [liliumao/Tensorflow-srcnn](https://github.com/liliumao/Tensorflow-srcnn) 
