@@ -15,7 +15,7 @@ For training, `python main.py`
 For testing, `python main.py --is_train False --stride 21`
 
 ## Result
-After training 15,000 epochs, I got similar super-resolved image to reference paper.<br>
+After training 15,000 epochs, I got similar super-resolved image to reference paper. Training time takes 12 hours 16 minutes and 1.41 seconds. My desktop performance is Intel I7-6700 CPU, GTX970, and 16GB RAM. Result images are shown below.<br><br>
 Original butterfly image:
 ![orig](https://github.com/tegg89/SRCNN-Tensorflow/blob/master/result/orig.png)<br>
 Bicubic interpolated image:
