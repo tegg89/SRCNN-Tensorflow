@@ -50,8 +50,8 @@ def preprocess(path, scale=3):
   image = image / 255.
   label_ = label_ / 255.
 
-  input_ = scipy.ndimage.interpolation.zoom(label_, .5, prefilter=False)
-  input_ = scipy.ndimage.interpolation.zoom(input_, 2, prefilter=False)
+  input_ = scipy.ndimage.interpolation.zoom(label_, (1./scale), prefilter=False)
+  input_ = scipy.ndimage.interpolation.zoom(input_, (scale/1.), prefilter=False)
 
   return input_, label_
 
