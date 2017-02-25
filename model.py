@@ -53,7 +53,7 @@ class SRCNN(object):
     self.pred = self.model()
 
     # Loss function (MSE)
-    self.loss = tf.reduce_mean(tf.reduce_sum(tf.square(self.labels - self.pred), reduction_indices=0))
+    self.loss = tf.reduce_mean(tf.square(self.labels - self.pred))
 
     self.saver = tf.train.Saver()
 
