@@ -112,7 +112,7 @@ class SRCNN(object):
       result = result.squeeze()
       image_path = os.path.join(os.getcwd(), config.sample_dir)
       image_path = os.path.join(image_path, "test_image.png")
-      imsave(image_path, result))
+      imsave(result, image_path)
 
   def model(self):
     conv1 = tf.nn.relu(tf.nn.conv2d(self.images, self.weights['w1'], strides=[1,1,1,1], padding='VALID') + self.biases['b1'])
