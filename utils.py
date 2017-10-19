@@ -47,7 +47,6 @@ def preprocess(path, scale=3):
   label_ = modcrop(image, scale)
 
   # Must be normalized
-  image = image / 255.
   label_ = label_ / 255.
 
   input_ = scipy.ndimage.interpolation.zoom(label_, (1./scale), prefilter=False)
