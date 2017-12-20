@@ -15,6 +15,11 @@ import numpy as np
 
 import tensorflow as tf
 
+try:
+  xrange
+except:
+  xrange = range
+  
 FLAGS = tf.app.flags.FLAGS
 
 def read_data(path):
@@ -142,7 +147,7 @@ def input_setup(sess, config):
       for x in range(0, h-config.image_size+1, config.stride):
         for y in range(0, w-config.image_size+1, config.stride):
           sub_input = input_[x:x+config.image_size, y:y+config.image_size] # [33 x 33]
-          sub_label = label_[x+padding:x+padding+config.label_size, y+padding:y+padding+config.label_size] # [21 x 21]
+          sub_label = label_[x+int(padding):x+int(padding)+config.label_size, y+int(padding):y+int(padding)+config.label_size] # [21 x 21]
 
           # Make channel value
           sub_input = sub_input.reshape([config.image_size, config.image_size, 1])  
@@ -166,7 +171,7 @@ def input_setup(sess, config):
       for y in range(0, w-config.image_size+1, config.stride):
         ny += 1
         sub_input = input_[x:x+config.image_size, y:y+config.image_size] # [33 x 33]
-        sub_label = label_[x+padding:x+padding+config.label_size, y+padding:y+padding+config.label_size] # [21 x 21]
+        sub_label = label_[x+int(padding):x+int(padding)+config.label_size, y+int(padding):y+int(padding)+config.label_size] # [21 x 21]
         
         sub_input = sub_input.reshape([config.image_size, config.image_size, 1])  
         sub_label = sub_label.reshape([config.label_size, config.label_size, 1])
