@@ -12,6 +12,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
+try:
+  xrange
+except:
+  xrange = range
+
 class SRCNN(object):
 
   def __init__(self, 
