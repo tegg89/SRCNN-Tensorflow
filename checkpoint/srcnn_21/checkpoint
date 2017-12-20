@@ -1,0 +1,2 @@
+model_checkpoint_path: "SRCNN.model-2550000"
+all_model_checkpoint_paths: "SRCNN.model-2550000"
