@@ -1,0 +1,6 @@
+model_checkpoint_path: "SRCNN.model-203320"
+all_model_checkpoint_paths: "SRCNN.model-199920"
+all_model_checkpoint_paths: "SRCNN.model-200770"
+all_model_checkpoint_paths: "SRCNN.model-201620"
+all_model_checkpoint_paths: "SRCNN.model-202470"
+all_model_checkpoint_paths: "SRCNN.model-203320"
