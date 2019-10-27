@@ -32,11 +32,10 @@ def read_data(path):
         return data, label
         
 def salt_pepper(size, p):
-        salt = np.random.rand(*size)
-        salt[salt >= p] = 1
-        salt[salt <= p] = 0
-        return salt
-
+    salt = np.random.rand(*size)
+    salt[salt >= p] = 1
+    salt[salt <= p] = 0
+    return salt
 
 def preprocess(path, scale=3):
     """
