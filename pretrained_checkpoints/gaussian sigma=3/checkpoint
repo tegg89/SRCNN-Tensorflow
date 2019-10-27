@@ -1,0 +1,6 @@
+model_checkpoint_path: "SRCNN.model-5270"
+all_model_checkpoint_paths: "SRCNN.model-1870"
+all_model_checkpoint_paths: "SRCNN.model-2720"
+all_model_checkpoint_paths: "SRCNN.model-3570"
+all_model_checkpoint_paths: "SRCNN.model-4420"
+all_model_checkpoint_paths: "SRCNN.model-5270"
