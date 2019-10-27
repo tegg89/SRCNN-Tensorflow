@@ -1,0 +1,6 @@
+model_checkpoint_path: "SRCNN.model-10370"
+all_model_checkpoint_paths: "SRCNN.model-6970"
+all_model_checkpoint_paths: "SRCNN.model-7820"
+all_model_checkpoint_paths: "SRCNN.model-8670"
+all_model_checkpoint_paths: "SRCNN.model-9520"
+all_model_checkpoint_paths: "SRCNN.model-10370"
