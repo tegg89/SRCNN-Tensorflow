@@ -9,11 +9,11 @@ import random
 import matplotlib.pyplot as plt
 
 from PIL import Image  # for loading images as YCbCr format
-import scipy.misc
+import imageio.v3
 import scipy.ndimage
 import numpy as np
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 try:
   xrange
@@ -97,9 +97,9 @@ def imread(path, is_grayscale=True):
   Default value is gray-scale, and image is read by YCbCr format as the paper said.
   """
   if is_grayscale:
-    return scipy.misc.imread(path, flatten=True, mode='YCbCr').astype(np.float)
+    return imageio.imread(path, pilmode='YCbCr').astype(np.float)[:, :, 0]
   else:
-    return scipy.misc.imread(path, mode='YCbCr').astype(np.float)
+    return imageio.imread(path, pilmode='YCbCr').astype(np.float)  
 
 def modcrop(image, scale=3):
   """
