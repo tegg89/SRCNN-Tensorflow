@@ -2,7 +2,7 @@ from model import SRCNN
 from utils import input_setup
 
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 import pprint
 import os
